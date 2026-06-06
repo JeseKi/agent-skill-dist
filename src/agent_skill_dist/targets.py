@@ -17,8 +17,8 @@ def resolve_destination(
 
     if target == "repo":
         return Path.cwd().resolve() / ".agents" / "skills" / skill_name
-    if target == "user":
+    if target in {"user", "global"}:
         codex_home = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
         return codex_home.resolve() / "skills" / skill_name
 
-    raise SkillDistError("target 必须是 'repo' 或 'user'")
+    raise SkillDistError("target 必须是 'repo'、'user' 或 'global'")

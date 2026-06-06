@@ -28,6 +28,7 @@ def install_bundled_skill(
     distribution: str,
     resource_root: str,
     skill_name: str,
+    package_version: str | None = None,
     target: str = "user",
     output: str | Path | None = None,
     yes: bool = False,
@@ -41,10 +42,10 @@ def install_bundled_skill(
         output=output,
         skill_name=skill_name,
     )
-    bundled_version = get_distribution_version(distribution)
+    bundled_version = package_version or get_distribution_version(distribution)
 
     if destination.exists() and not yes:
-        raise SkillAlreadyExists(f"目标 skill 已存在：{destination}")
+        raise SkillAlreadyExists(destination)
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     temp_path = Path(
@@ -81,6 +82,7 @@ def install_bundled_skill(
         distribution=distribution,
         resource_root=resource_root,
         skill_name=skill_name,
+        package_version=package_version,
         target=target,
         output=output,
     )
@@ -92,6 +94,7 @@ def skill_status(
     distribution: str,
     resource_root: str,
     skill_name: str,
+    package_version: str | None = None,
     target: str = "user",
     output: str | Path | None = None,
 ) -> SkillInstallStatus:
@@ -105,7 +108,7 @@ def skill_status(
         output=output,
         skill_name=skill_name,
     )
-    bundled_version = get_distribution_version(distribution)
+    bundled_version = package_version or get_distribution_version(distribution)
     installed = destination.exists()
     metadata = read_install_metadata(destination)
     installed_version = metadata.get("package_version") if metadata else None

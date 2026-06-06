@@ -1,6 +1,6 @@
 [project]
 name = "agent-skill-dist"
-version = "0.1.0"
+version = "0.1.1"
 description = "从 Python CLI 包中安装内置 agent skill。"
 readme = "README.md"
 requires-python = ">=3.13"

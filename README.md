@@ -54,6 +54,7 @@ install_bundled_skill(
     distribution="my-cli",
     resource_root="bundled_skills",
     skill_name="my-cli",
+    package_version="1.3.1",
     target="repo",
     yes=False,
 )
@@ -75,6 +76,10 @@ install_bundled_skill(
 }
 ```
 
+`package_version` 是可选参数。传入时会优先用于 `bundled_version`、状态判断和
+`.agent-skill-install.json`；不传时 fallback 到
+`importlib.metadata.version(distribution)`。
+
 ## CLI 集成
 
 本库不依赖 Typer、Click 或 argparse。父 CLI 可以把 API 接入自己的命令框架：
@@ -83,14 +88,26 @@ install_bundled_skill(
 mycli skill status
 mycli skill install --target repo
 mycli skill install --target user --yes
+mycli skill install --target global --yes
 mycli skill install --output .agents/skills --yes
 ```
+
+`target="global"` 是 `target="user"` 的 alias，安装路径仍然是
+`${CODEX_HOME:-~/.codex}/skills/<skill-name>`。
 
 如果需要人类可读输出或 JSON 输出 helper：
 
 ```python
-from agent_skill_dist.cli import install_to_text, status_to_json, status_to_text
+from agent_skill_dist.cli import (
+    already_exists_to_text,
+    install_to_text,
+    status_to_json,
+    status_to_text,
+)
 ```
+
+`SkillAlreadyExists` 暴露 `destination` 字段，父 CLI 可以用
+`already_exists_to_text()` 输出覆盖提示。
 
 ## Hatchling 包数据
 
@@ -110,3 +127,5 @@ artifacts = [
 uv run pytest
 uv build
 ```
+
+本包包含 `py.typed`，类型检查器可以直接使用源码中的类型标注。

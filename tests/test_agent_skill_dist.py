@@ -12,6 +12,7 @@ from agent_skill_dist import (
     install_bundled_skill,
     skill_status,
 )
+from agent_skill_dist.cli import already_exists_to_text, install_to_text
 from agent_skill_dist.metadata import INSTALL_METADATA_FILE
 
 PACKAGE = "demo_cli"
@@ -76,6 +77,38 @@ def test_fresh_install_copies_skill_and_metadata(tmp_path: Path) -> None:
     assert metadata["installed_at"].endswith("Z")
 
 
+def test_package_version_override_is_used_for_status_and_metadata(
+    tmp_path: Path,
+) -> None:
+    status = install_bundled_skill(
+        package=PACKAGE,
+        distribution=DIST,
+        resource_root=RESOURCE_ROOT,
+        skill_name=SKILL_NAME,
+        package_version="1.4.0",
+        output=tmp_path,
+    )
+
+    metadata = json.loads(
+        (tmp_path / SKILL_NAME / INSTALL_METADATA_FILE).read_text(encoding="utf-8")
+    )
+    assert status.bundled_version == "1.4.0"
+    assert status.installed_version == "1.4.0"
+    assert metadata["package_version"] == "1.4.0"
+
+
+def test_package_version_falls_back_to_distribution_metadata(tmp_path: Path) -> None:
+    status = skill_status(
+        package=PACKAGE,
+        distribution=DIST,
+        resource_root=RESOURCE_ROOT,
+        skill_name=SKILL_NAME,
+        output=tmp_path,
+    )
+
+    assert status.bundled_version == "1.2.3"
+
+
 def test_existing_destination_requires_yes(tmp_path: Path) -> None:
     install_bundled_skill(
         package=PACKAGE,
@@ -85,7 +118,7 @@ def test_existing_destination_requires_yes(tmp_path: Path) -> None:
         output=tmp_path,
     )
 
-    with pytest.raises(SkillAlreadyExists):
+    with pytest.raises(SkillAlreadyExists) as exc_info:
         install_bundled_skill(
             package=PACKAGE,
             distribution=DIST,
@@ -93,6 +126,11 @@ def test_existing_destination_requires_yes(tmp_path: Path) -> None:
             skill_name=SKILL_NAME,
             output=tmp_path,
         )
+
+    assert exc_info.value.destination == tmp_path / SKILL_NAME
+    assert already_exists_to_text(exc_info.value) == (
+        f"目标 skill 已存在：{tmp_path / SKILL_NAME}\n如需覆盖，请加 --yes。"
+    )
 
 
 def test_existing_destination_is_replaced_with_yes(tmp_path: Path) -> None:
@@ -145,6 +183,23 @@ def test_user_target_honors_codex_home(
     assert status.destination == tmp_path / "codex" / "skills" / SKILL_NAME
 
 
+def test_global_target_alias_honors_codex_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex"))
+
+    status = install_bundled_skill(
+        package=PACKAGE,
+        distribution=DIST,
+        resource_root=RESOURCE_ROOT,
+        skill_name=SKILL_NAME,
+        target="global",
+    )
+
+    assert status.target == "global"
+    assert status.destination == tmp_path / "codex" / "skills" / SKILL_NAME
+
+
 def test_output_overrides_target(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -156,12 +211,27 @@ def test_output_overrides_target(
         distribution=DIST,
         resource_root=RESOURCE_ROOT,
         skill_name=SKILL_NAME,
-        target="user",
+        target="global",
         output=tmp_path / "custom",
     )
 
     assert status.target == "output"
     assert status.destination == tmp_path / "custom" / SKILL_NAME
+
+
+def test_install_to_text_includes_version(tmp_path: Path) -> None:
+    status = install_bundled_skill(
+        package=PACKAGE,
+        distribution=DIST,
+        resource_root=RESOURCE_ROOT,
+        skill_name=SKILL_NAME,
+        package_version="1.4.0",
+        output=tmp_path,
+    )
+
+    assert install_to_text(status) == (
+        f"已安装 {SKILL_NAME} 到 {tmp_path / SKILL_NAME}\n版本：1.4.0"
+    )
 
 
 def test_missing_bundled_skill_raises() -> None:
