@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 统计项目中的 Python 代码行数
 
@@ -25,7 +24,7 @@ def is_in_venv_dir(file_path: Path) -> bool:
 def count_lines_in_file(file_path: Path) -> int:
     """计算单个文件的行数"""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             return sum(1 for _ in f)
     except Exception as e:
         print(f"无法读取文件 {file_path}: {e}")
